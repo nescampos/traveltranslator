@@ -10,8 +10,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Linking,
 } from 'react-native';
-import { RotateCcw, Send, Volume2, Sparkles } from 'lucide-react-native';
+import { RotateCcw, Send, Volume2, Sparkles, ExternalLink } from 'lucide-react-native';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { RecordingButton } from '@/components/RecordingButton';
 import { AudioPlayer } from '@/components/AudioPlayer';
@@ -133,6 +134,14 @@ export default function TranslateScreen() {
     setTranslatedText('');
   };
 
+  const handleBoltPress = () => {
+    if (Platform.OS === 'web') {
+      window.open('https://bolt.new', '_blank');
+    } else {
+      Linking.openURL('https://bolt.new');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -141,8 +150,27 @@ export default function TranslateScreen() {
       >
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.title}>Travel Translator</Text>
-            <Text style={styles.subtitle}>Speak with confidence anywhere</Text>
+            <View style={styles.headerContent}>
+              <Text style={styles.title}>Travel Translator</Text>
+              <Text style={styles.subtitle}>Speak with confidence anywhere</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.boltBadge}
+              onPress={handleBoltPress}
+              activeOpacity={0.8}
+            >
+              <View style={styles.boltContent}>
+                <View style={styles.boltIcon}>
+                  <Text style={styles.boltEmoji}>⚡</Text>
+                </View>
+                <View style={styles.boltText}>
+                  <Text style={styles.boltLabel}>Built with</Text>
+                  <Text style={styles.boltName}>Bolt.new</Text>
+                </View>
+                <ExternalLink size={14} color="#6366f1" />
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.languageSelectors}>
@@ -294,12 +322,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 24,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
+  },
+  headerContent: {
+    flex: 1,
   },
   title: {
     fontSize: 28,
@@ -311,6 +345,54 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: 'Inter-Regular',
     color: '#6b7280',
+  },
+  boltBadge: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  boltContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  boltIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: '#6366f1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  boltEmoji: {
+    fontSize: 12,
+    color: '#ffffff',
+  },
+  boltText: {
+    alignItems: 'flex-start',
+  },
+  boltLabel: {
+    fontSize: 10,
+    fontFamily: 'Inter-Medium',
+    color: '#64748b',
+    lineHeight: 12,
+  },
+  boltName: {
+    fontSize: 12,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1e293b',
+    lineHeight: 14,
   },
   languageSelectors: {
     flexDirection: 'row',
