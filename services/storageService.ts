@@ -3,6 +3,7 @@ import { Translation } from '@/types/translation';
 
 const TRANSLATIONS_KEY = 'translations_history';
 const SETTINGS_KEY = 'app_settings';
+const OPENAI_KEY = 'openai_api_key';
 
 export interface AppSettings {
   defaultSourceLanguage: string;
@@ -76,6 +77,33 @@ export class StorageService {
         darkMode: false,
         autoSpeak: true,
       };
+    }
+  }
+
+  async saveOpenAIKey(apiKey: string): Promise<void> {
+    try {
+      await AsyncStorage.setItem(OPENAI_KEY, apiKey);
+    } catch (error) {
+      console.error('Error saving OpenAI API key:', error);
+      throw error;
+    }
+  }
+
+  async getOpenAIKey(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(OPENAI_KEY);
+    } catch (error) {
+      console.error('Error loading OpenAI API key:', error);
+      return null;
+    }
+  }
+
+  async removeOpenAIKey(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(OPENAI_KEY);
+    } catch (error) {
+      console.error('Error removing OpenAI API key:', error);
+      throw error;
     }
   }
 }

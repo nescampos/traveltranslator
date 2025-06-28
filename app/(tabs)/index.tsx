@@ -12,7 +12,7 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import { RotateCcw, Send, Volume2, Sparkles, ExternalLink } from 'lucide-react-native';
+import { RotateCcw, Send, Volume2, Sparkles, ExternalLink, Settings } from 'lucide-react-native';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { RecordingButton } from '@/components/RecordingButton';
 import { AudioPlayer } from '@/components/AudioPlayer';
@@ -21,6 +21,7 @@ import { StorageService } from '@/services/storageService';
 import { ElevenLabsService } from '@/services/elevenLabsService';
 import { Translation } from '@/types/translation';
 import * as Speech from 'expo-speech';
+import { router } from 'expo-router';
 
 export default function TranslateScreen() {
   const [sourceLanguage, setSourceLanguage] = useState('en');
@@ -29,6 +30,7 @@ export default function TranslateScreen() {
   const [translatedText, setTranslatedText] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [showAPIKeyPrompt, setShowAPIKeyPrompt] = useState(false);
 
   const translationService = TranslationService.getInstance();
   const storageService = StorageService.getInstance();
@@ -36,6 +38,7 @@ export default function TranslateScreen() {
 
   useEffect(() => {
     loadSettings();
+    checkAPIConfiguration();
   }, []);
 
   const loadSettings = async () => {
@@ -45,6 +48,15 @@ export default function TranslateScreen() {
       setTargetLanguage(settings.defaultTargetLanguage);
     } catch (error) {
       console.error('Error loading settings:', error);
+    }
+  };
+
+  const checkAPIConfiguration = async () => {
+    const envConfigured = translationService.isEnvironmentConfigured();
+    const userConfigured = await translationService.isUserConfigured();
+    
+    if (!envConfigured && !userConfigured) {
+      setShowAPIKeyPrompt(true);
     }
   };
 
@@ -142,6 +154,14 @@ export default function TranslateScreen() {
     }
   };
 
+  const handleGoToSettings = () => {
+    router.push('/(tabs)/settings');
+  };
+
+  const dismissAPIKeyPrompt = () => {
+    setShowAPIKeyPrompt(false);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -172,6 +192,33 @@ export default function TranslateScreen() {
               </View>
             </TouchableOpacity>
           </View>
+
+          {showAPIKeyPrompt && (
+            <View style={styles.apiPrompt}>
+              <View style={styles.apiPromptContent}>
+                <Text style={styles.apiPromptTitle}>🚀 Get Started with AI Translations</Text>
+                <Text style={styles.apiPromptDescription}>
+                  To unlock advanced AI translations, add your OpenAI API key in settings. 
+                  Without it, you'll see demo translations only.
+                </Text>
+                <View style={styles.apiPromptActions}>
+                  <TouchableOpacity 
+                    style={styles.apiPromptButton}
+                    onPress={handleGoToSettings}
+                  >
+                    <Settings size={16} color="#ffffff" />
+                    <Text style={styles.apiPromptButtonText}>Add API Key</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.apiPromptDismiss}
+                    onPress={dismissAPIKeyPrompt}
+                  >
+                    <Text style={styles.apiPromptDismissText}>Continue with Demo</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
 
           <View style={styles.languageSelectors}>
             <View style={styles.languageSelector}>
@@ -393,6 +440,65 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-SemiBold',
     color: '#1e293b',
     lineHeight: 14,
+  },
+  apiPrompt: {
+    margin: 16,
+    backgroundColor: '#eff6ff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    shadowColor: '#000000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  apiPromptContent: {
+    padding: 20,
+  },
+  apiPromptTitle: {
+    fontSize: 18,
+    fontFamily: 'Inter-Bold',
+    color: '#1e40af',
+    marginBottom: 8,
+  },
+  apiPromptDescription: {
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    color: '#1e40af',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  apiPromptActions: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'center',
+  },
+  apiPromptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563eb',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    gap: 6,
+  },
+  apiPromptButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
+  },
+  apiPromptDismiss: {
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+  },
+  apiPromptDismissText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#6b7280',
   },
   languageSelectors: {
     flexDirection: 'row',

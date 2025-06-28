@@ -1,11 +1,15 @@
 import { TranslationRequest, TranslationResponse } from '@/types/translation';
+import { StorageService } from '@/services/storageService';
 
 const OPENAI_API_KEY = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
 
 export class TranslationService {
   private static instance: TranslationService;
+  private storageService: StorageService;
 
-  private constructor() {}
+  private constructor() {
+    this.storageService = StorageService.getInstance();
+  }
 
   public static getInstance(): TranslationService {
     if (!TranslationService.instance) {
@@ -16,7 +20,13 @@ export class TranslationService {
 
   async translateText(request: TranslationRequest): Promise<TranslationResponse> {
     try {
-      if (!OPENAI_API_KEY) {
+      // Try to get API key from environment first, then from user storage
+      let apiKey = OPENAI_API_KEY;
+      if (!apiKey) {
+        apiKey = await this.storageService.getOpenAIKey();
+      }
+
+      if (!apiKey) {
         console.warn('OpenAI API key not configured, using simulation');
         return this.simulateTranslation(request);
       }
@@ -25,7 +35,7 @@ export class TranslationService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
@@ -232,7 +242,16 @@ Rules:
     };
   }
 
-  isConfigured(): boolean {
+  isEnvironmentConfigured(): boolean {
     return !!OPENAI_API_KEY;
+  }
+
+  async isUserConfigured(): Promise<boolean> {
+    const userKey = await this.storageService.getOpenAIKey();
+    return !!userKey;
+  }
+
+  isConfigured(): boolean {
+    return this.isEnvironmentConfigured();
   }
 }

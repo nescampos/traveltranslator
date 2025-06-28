@@ -10,10 +10,11 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
-import { ChevronRight, Globe, Volume2, Moon, Info, Sparkles, Key, Eye, EyeOff } from 'lucide-react-native';
+import { ChevronRight, Globe, Volume2, Moon, Info, Sparkles, Key, Eye, EyeOff, Brain } from 'lucide-react-native';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { StorageService, AppSettings } from '@/services/storageService';
 import { ElevenLabsService } from '@/services/elevenLabsService';
+import { TranslationService } from '@/services/translationService';
 
 export default function SettingsScreen() {
   const [settings, setSettings] = useState<AppSettings>({
@@ -23,15 +24,20 @@ export default function SettingsScreen() {
     autoSpeak: true,
   });
   const [elevenLabsKey, setElevenLabsKey] = useState('');
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [isKeyConfigured, setIsKeyConfigured] = useState(false);
+  const [openAIKey, setOpenAIKey] = useState('');
+  const [showElevenLabsKey, setShowElevenLabsKey] = useState(false);
+  const [showOpenAIKey, setShowOpenAIKey] = useState(false);
+  const [isElevenLabsConfigured, setIsElevenLabsConfigured] = useState(false);
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
+  const [hasEnvOpenAI, setHasEnvOpenAI] = useState(false);
 
   const storageService = StorageService.getInstance();
   const elevenLabsService = ElevenLabsService.getInstance();
+  const translationService = TranslationService.getInstance();
 
   useEffect(() => {
     loadSettings();
-    checkElevenLabsConfig();
+    checkAPIConfigurations();
   }, []);
 
   const loadSettings = async () => {
@@ -43,8 +49,21 @@ export default function SettingsScreen() {
     }
   };
 
-  const checkElevenLabsConfig = () => {
-    setIsKeyConfigured(elevenLabsService.isConfigured());
+  const checkAPIConfigurations = async () => {
+    // Check ElevenLabs
+    setIsElevenLabsConfigured(elevenLabsService.isConfigured());
+    
+    // Check OpenAI - both environment and user-provided
+    const envConfigured = translationService.isEnvironmentConfigured();
+    const userConfigured = await translationService.isUserConfigured();
+    
+    setHasEnvOpenAI(envConfigured);
+    setIsOpenAIConfigured(envConfigured || userConfigured);
+    
+    if (userConfigured && !envConfigured) {
+      const userKey = await storageService.getOpenAIKey();
+      setOpenAIKey(userKey || '');
+    }
   };
 
   const saveSettings = async (newSettings: AppSettings) => {
@@ -73,6 +92,47 @@ export default function SettingsScreen() {
     saveSettings({ ...settings, darkMode: value });
   };
 
+  const handleSaveOpenAIKey = async () => {
+    if (!openAIKey.trim()) {
+      Alert.alert('Error', 'Please enter a valid OpenAI API key');
+      return;
+    }
+
+    try {
+      await storageService.saveOpenAIKey(openAIKey.trim());
+      setIsOpenAIConfigured(true);
+      Alert.alert('Success', 'OpenAI API key saved successfully');
+    } catch (error) {
+      console.error('Error saving OpenAI key:', error);
+      Alert.alert('Error', 'Failed to save OpenAI API key');
+    }
+  };
+
+  const handleRemoveOpenAIKey = () => {
+    Alert.alert(
+      'Remove API Key',
+      'Are you sure you want to remove your OpenAI API key? You will need to re-enter it to use real translations.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await storageService.removeOpenAIKey();
+              setOpenAIKey('');
+              setIsOpenAIConfigured(hasEnvOpenAI);
+              Alert.alert('Success', 'OpenAI API key removed');
+            } catch (error) {
+              console.error('Error removing OpenAI key:', error);
+              Alert.alert('Error', 'Failed to remove OpenAI API key');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const showAbout = () => {
     Alert.alert(
       'About Travel Translator',
@@ -90,6 +150,19 @@ export default function SettingsScreen() {
         { text: 'Visit ElevenLabs', onPress: () => {
           // In a real app, you would open the browser
           console.log('Opening ElevenLabs website');
+        }}
+      ]
+    );
+  };
+
+  const showOpenAIInfo = () => {
+    Alert.alert(
+      'OpenAI Translation',
+      'OpenAI provides advanced AI translation capabilities using GPT models.\n\n• Accurate context-aware translations\n• 50+ languages supported\n• Natural language understanding\n• Cultural context preservation\n\nSign up at platform.openai.com to get your API key.',
+      [
+        { text: 'Cancel' },
+        { text: 'Visit OpenAI', onPress: () => {
+          console.log('Opening OpenAI website');
         }}
       ]
     );
@@ -136,6 +209,74 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {!hasEnvOpenAI && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>OpenAI Translation</Text>
+              <TouchableOpacity onPress={showOpenAIInfo}>
+                <Info size={16} color="#2563eb" />
+              </TouchableOpacity>
+            </View>
+            
+            {isOpenAIConfigured ? (
+              <View style={styles.configuredContainer}>
+                <View style={styles.configuredHeader}>
+                  <Brain size={20} color="#10b981" />
+                  <Text style={styles.configuredTitle}>OpenAI Connected</Text>
+                </View>
+                <Text style={styles.configuredDescription}>
+                  Advanced AI translations are enabled with your API key
+                </Text>
+                <TouchableOpacity style={styles.removeButton} onPress={handleRemoveOpenAIKey}>
+                  <Text style={styles.removeButtonText}>Remove API Key</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.apiKeyContainer}>
+                <View style={styles.apiKeyHeader}>
+                  <Key size={20} color="#2563eb" />
+                  <Text style={styles.apiKeyTitle}>OpenAI API Key</Text>
+                </View>
+                <Text style={styles.apiKeyDescription}>
+                  Add your OpenAI API key to enable advanced AI translations
+                </Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.apiKeyInput}
+                    placeholder="Enter your OpenAI API key (sk-...)"
+                    value={openAIKey}
+                    onChangeText={setOpenAIKey}
+                    secureTextEntry={!showOpenAIKey}
+                    placeholderTextColor="#9ca3af"
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowOpenAIKey(!showOpenAIKey)}
+                  >
+                    {showOpenAIKey ? (
+                      <EyeOff size={20} color="#6b7280" />
+                    ) : (
+                      <Eye size={20} color="#6b7280" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+                <TouchableOpacity 
+                  style={[styles.saveButton, !openAIKey.trim() && styles.saveButtonDisabled]} 
+                  onPress={handleSaveOpenAIKey}
+                  disabled={!openAIKey.trim()}
+                >
+                  <Text style={[styles.saveButtonText, !openAIKey.trim() && styles.saveButtonTextDisabled]}>
+                    Save API Key
+                  </Text>
+                </TouchableOpacity>
+                <Text style={styles.apiKeyNote}>
+                  Note: API keys are stored locally and only used for OpenAI requests
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>AI Voice Settings</Text>
@@ -144,7 +285,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
           
-          {isKeyConfigured ? (
+          {isElevenLabsConfigured ? (
             <View style={styles.configuredContainer}>
               <View style={styles.configuredHeader}>
                 <Sparkles size={20} color="#10b981" />
@@ -172,14 +313,14 @@ export default function SettingsScreen() {
                   placeholder="Enter your ElevenLabs API key"
                   value={elevenLabsKey}
                   onChangeText={setElevenLabsKey}
-                  secureTextEntry={!showApiKey}
+                  secureTextEntry={!showElevenLabsKey}
                   placeholderTextColor="#9ca3af"
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
-                  onPress={() => setShowApiKey(!showApiKey)}
+                  onPress={() => setShowElevenLabsKey(!showElevenLabsKey)}
                 >
-                  {showApiKey ? (
+                  {showElevenLabsKey ? (
                     <EyeOff size={20} color="#6b7280" />
                   ) : (
                     <Eye size={20} color="#6b7280" />
@@ -202,7 +343,7 @@ export default function SettingsScreen() {
               <View style={styles.toggleTexts}>
                 <Text style={styles.toggleTitle}>Auto-speak translations</Text>
                 <Text style={styles.toggleSubtitle}>
-                  {isKeyConfigured 
+                  {isElevenLabsConfigured 
                     ? 'Automatically play AI voice for translations'
                     : 'Automatically speak translated text (system voice)'
                   }
@@ -262,10 +403,20 @@ export default function SettingsScreen() {
           <Text style={styles.footerText}>
             Made with ❤️ for travelers worldwide
           </Text>
-          {isKeyConfigured && (
+          {(isElevenLabsConfigured || isOpenAIConfigured) && (
             <View style={styles.poweredBy}>
-              <Sparkles size={12} color="#8b5cf6" />
-              <Text style={styles.poweredByText}>Powered by ElevenLabs AI</Text>
+              {isOpenAIConfigured && (
+                <View style={styles.poweredByItem}>
+                  <Brain size={12} color="#2563eb" />
+                  <Text style={styles.poweredByText}>Powered by OpenAI</Text>
+                </View>
+              )}
+              {isElevenLabsConfigured && (
+                <View style={styles.poweredByItem}>
+                  <Sparkles size={12} color="#8b5cf6" />
+                  <Text style={styles.poweredByText}>Powered by ElevenLabs AI</Text>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -378,12 +529,26 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Medium',
     color: '#059669',
   },
+  removeButton: {
+    backgroundColor: '#fef2f2',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: '#fecaca',
+  },
+  removeButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-Medium',
+    color: '#dc2626',
+  },
   apiKeyContainer: {
-    backgroundColor: '#faf5ff',
+    backgroundColor: '#f8fafc',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e9d5ff',
+    borderColor: '#e2e8f0',
   },
   apiKeyHeader: {
     flexDirection: 'row',
@@ -394,12 +559,12 @@ const styles = StyleSheet.create({
   apiKeyTitle: {
     fontSize: 16,
     fontFamily: 'Inter-SemiBold',
-    color: '#7c3aed',
+    color: '#1e293b',
   },
   apiKeyDescription: {
     fontSize: 14,
     fontFamily: 'Inter-Regular',
-    color: '#6b46c1',
+    color: '#475569',
     marginBottom: 12,
   },
   inputContainer: {
@@ -409,7 +574,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   apiKeyInput: {
     flex: 1,
@@ -422,10 +587,29 @@ const styles = StyleSheet.create({
   eyeButton: {
     padding: 12,
   },
+  saveButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 8,
+  },
+  saveButtonDisabled: {
+    backgroundColor: '#e5e7eb',
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+    color: '#ffffff',
+  },
+  saveButtonTextDisabled: {
+    color: '#9ca3af',
+  },
   apiKeyNote: {
     fontSize: 12,
     fontFamily: 'Inter-Regular',
-    color: '#8b5cf6',
+    color: '#64748b',
     fontStyle: 'italic',
   },
   toggleItem: {
@@ -490,9 +674,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     color: '#9ca3af',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   poweredBy: {
+    alignItems: 'center',
+    gap: 8,
+  },
+  poweredByItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -500,6 +688,6 @@ const styles = StyleSheet.create({
   poweredByText: {
     fontSize: 12,
     fontFamily: 'Inter-Medium',
-    color: '#8b5cf6',
+    color: '#64748b',
   },
 });
