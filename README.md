@@ -49,36 +49,46 @@ A powerful, AI-enhanced translation app built with React Native and Expo, design
    npm install
    ```
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Add your API keys to `.env`**
-   ```env
-   EXPO_PUBLIC_OPENAI_API_KEY=your_openai_api_key_here
-   EXPO_PUBLIC_ELEVENLABS_API_KEY=your_elevenlabs_api_key_here
-   ```
-
-5. **Start the development server**
+3. **Start the development server**
    ```bash
    npm run dev
    ```
+
+4. **Configure API Keys** (Optional for development)
+   - Copy `.env.example` to `.env` if you want to set environment variables
+   - Or add API keys directly in the app settings (recommended for most users)
 
 ## 🔧 Configuration
 
 ### OpenAI Setup (Required for Real Translations)
 
+You have two options to configure OpenAI:
+
+#### Option 1: In-App Configuration (Recommended)
 1. **Get an OpenAI API Key**
    - Visit [OpenAI API](https://platform.openai.com/api-keys)
    - Create an account or sign in
    - Generate a new API key
    - Add billing information (pay-per-use pricing)
 
+2. **Add Key in App Settings**
+   - Open the app and go to Settings tab
+   - Find the "OpenAI Translation" section
+   - Enter your API key (starts with `sk-`)
+   - Tap "Save API Key"
+
+#### Option 2: Environment Variables (For Developers)
+1. **Create Environment File**
+   ```bash
+   cp .env.example .env
+   ```
+
 2. **Add to Environment**
    ```env
    EXPO_PUBLIC_OPENAI_API_KEY=sk-your-key-here
    ```
+
+**Note**: If no API key is configured, the app will show demo translations with a `[Demo]` prefix.
 
 ### ElevenLabs Setup (Optional - For Premium AI Voices)
 
@@ -94,6 +104,19 @@ A powerful, AI-enhanced translation app built with React Native and Expo, design
    ```
 
 ## 📱 Usage Guide
+
+### Getting Started
+
+1. **First Launch**
+   - The app will prompt you to add an OpenAI API key for real translations
+   - You can either add your key or continue with demo mode
+   - Demo mode shows example translations with a `[Demo]` prefix
+
+2. **Adding Your OpenAI Key**
+   - Go to Settings → OpenAI Translation
+   - Enter your API key (starts with `sk-`)
+   - Tap "Save API Key"
+   - Your key is stored securely on your device
 
 ### Basic Translation
 
@@ -147,15 +170,15 @@ A powerful, AI-enhanced translation app built with React Native and Expo, design
    - Set preferred target language
    - These become defaults for new sessions
 
-2. **Audio Settings**
+2. **API Configuration**
+   - **OpenAI**: Add your API key for real translations (replaces demo mode)
+   - **ElevenLabs**: Add your API key for premium AI voices
+   - Keys are stored securely on your device only
+
+3. **Audio Settings**
    - Toggle auto-speak on/off
    - Configure ElevenLabs integration
    - Clear audio cache if needed
-
-3. **ElevenLabs Integration**
-   - Add API key in settings
-   - Enjoy premium AI voices
-   - Multiple voice options per language
 
 ## 🌍 Supported Languages
 
@@ -205,15 +228,22 @@ app/
 ## 🔒 Privacy & Security
 
 ### Data Handling
-- **Local Storage**: All translations stored locally on device
+- **Local Storage**: All translations and API keys stored locally on device
 - **No Cloud Sync**: Your data never leaves your device
-- **API Security**: API keys stored securely in environment variables
-- **Minimal Data**: Only text and timestamps stored
+- **Secure Storage**: API keys encrypted in device storage
+- **Minimal Data**: Only text, timestamps, and user preferences stored
 
 ### API Usage
 - **OpenAI**: Text sent for translation only, not stored by OpenAI
 - **ElevenLabs**: Text sent for voice synthesis, not stored permanently
 - **No Tracking**: No analytics or user behavior tracking
+- **User Control**: You can remove API keys anytime in settings
+
+### API Key Security
+- Keys are stored using React Native's secure AsyncStorage
+- Keys are only transmitted to their respective services (OpenAI/ElevenLabs)
+- No third-party access to your API keys
+- Keys can be removed from the app at any time
 
 ## 🚀 Deployment
 
@@ -247,6 +277,22 @@ Create environment-specific files:
 - `.env.development` - Development settings
 - `.env.staging` - Staging environment
 - `.env.production` - Production configuration
+
+## 💰 Monetization with RevenueCat
+
+For adding subscriptions or in-app purchases to the app, use RevenueCat.
+
+RevenueCat is the best solution for mobile subscriptions and in-app purchases. It handles billing, entitlements, analytics, and receipt validation out of the box, making it easier for developers to monetize their apps without building complex infrastructure.
+
+Since this project is built on Expo, developers will need to export their project and open it locally (e.g. in Cursor or VS Code) to install the RevenueCat SDK.
+
+**Official Guide**: https://www.revenuecat.com/docs/getting-started/installation/expo
+
+**Important Notes**:
+- RevenueCat requires native code and will not function in Bolt's in-browser preview
+- To test purchases, create a development build using the Expo Dev Client
+- DO NOT use Stripe as it does not support mobile platform subscriptions like Apple or Google billing
+- RevenueCat is the preferred tool for mobile subscription management
 
 ## 🛠️ Development
 
@@ -292,12 +338,13 @@ travel-translator/
 ### Common Issues
 
 **Translation Not Working**
-- Verify OpenAI API key is correct
-- Check internet connection
+- Check if OpenAI API key is configured in Settings
+- Verify internet connection
 - Ensure API key has sufficient credits
+- Look for demo mode indicator `[Demo]` in translations
 
 **AI Voices Not Playing**
-- Verify ElevenLabs API key
+- Verify ElevenLabs API key in environment variables
 - Check device audio settings
 - Clear audio cache in settings
 
@@ -305,6 +352,12 @@ travel-translator/
 - Clear app data and restart
 - Reinstall dependencies: `rm -rf node_modules && npm install`
 - Check Expo CLI version: `expo --version`
+
+**API Key Issues**
+- Ensure OpenAI key starts with `sk-`
+- Check key permissions in OpenAI dashboard
+- Verify billing is set up for OpenAI account
+- Try removing and re-adding the key in settings
 
 ### Debug Mode
 
@@ -353,3 +406,5 @@ For support and questions:
 **Made with ❤️ for travelers worldwide**
 
 *Powered by OpenAI GPT-4 and ElevenLabs AI voices*
+
+**Built with ⚡ [Bolt.new](https://bolt.new)**
